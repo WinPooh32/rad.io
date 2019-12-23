@@ -222,9 +222,6 @@ int main(){
         if(ticks - last_send > timer ){
             last_send = ticks;
             write();
-
-            printf("SEND\n");
-            fflush(stdout);
         }
 
         ticks += 1;
