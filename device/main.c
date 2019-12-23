@@ -57,7 +57,7 @@ struct args_get_data_t extract_args_get_data(args_buf_t* buf){
 }
 
 struct args_set_timer_t {
-    size_t secs;
+    uint32_t secs;
 } PACKED;
 
 // extract_args_set_timer_t преобразует массив байтов в структуру args_set_timer_t
