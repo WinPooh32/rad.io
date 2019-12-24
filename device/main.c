@@ -86,14 +86,41 @@ void set_timer(size_t secs){
 //--------------------------------------
 //------ Операции ввода-вывода ---------
 //--------------------------------------
+
 // cast_to_bytes преобразует структуру типа data_packet_t в массив
-void* cast_to_bytes(struct data_packet_t* ptr){
-    return (void*)ptr;
+uint8_t* cast_to_bytes(struct data_packet_t* ptr){
+    return (uint8_t*)ptr;
 }
 
 // copy_to_packet копирует из массива data в пакет по указателю ptr
 void copy_to_packet(const void* data, struct data_packet_t* ptr){
     memcpy(ptr, data, sizeof(*ptr));
+}
+
+void send_to_radio(const uint8_t* data, const size_t length){
+    /* Send data to slave */
+    spi_select_slave(&master, &slave_inst, true);
+
+    for(size_t i = 0; i < length; i++){
+        spi_write(&master, *(data + i));
+        while (!spi_is_write_complete(&master)) {}
+    }
+}
+
+void recieve_from_radio(const uint8_t* data, const size_t length){
+    spi_select_slave(&master, &slave_inst, true);
+
+    while (!spi_is_ready_to_read(&master)) {
+    }
+    spi_read(&master, &rxd_data);
+
+    for(size_t i = 0; i < length; i++){
+        /* Read SPI slave data register */
+        while (!spi_is_ready_to_read(&slave)) {}
+        spi_read(&slave, (data + i));
+    }
+
+    spi_select_slave(&master, &slave_inst, false);
 }
 
 // для приемника пакета с данными
@@ -107,23 +134,22 @@ void copy_to_packet(const void* data, struct data_packet_t* ptr){
 
 // read заполняем
 int read(){
-//    if( !ПРИШЛА_НОВАЯ_КОМАНДА ){
-//        return BOOL_FALSE;
-//    }
+    if( !spi_is_ready_to_read(&slave) ){
+        return BOOL_FALSE;
+    }
 
-//    заполняем command_packet
+    //  заполняем command_packet
+    uint8_t* bytes = (uint8_t*)(&command_packet);
+    recieve_from_radio(bytes, sizeof(command_packet));
+
     return BOOL_TRUE;
 }
 
 // write передает данные из packet
 void write(){
-    static uint8_t io_buffer[255]; // аналог буфера на радио-модуле
-    void* bytes = cast_to_bytes(&packet);
-
-    // копируем из packet в буфер
-    memcpy(io_buffer, bytes, DATA_PACKET_SIZE); // заменить на отправку по UART
+    uint8_t* bytes = cast_to_bytes(&packet);
+    send_to_radio(bytes, DATA_PACKET_SIZE);
 }
-
 
 //--------------------------------------
 
@@ -132,23 +158,26 @@ void write(){
 //--- Инициализация / опрос датчиков ---
 //--------------------------------------
 void read_id(){
-    // ...
+    packet.id[0] = 0x24;
+    packet.id[1] = 0x62;
+    packet.id[2] = 0x49;
 }
 
 void read_gps(){
-    // ...
+    uint8_t fake_gps[83] = "$GPGGA,075241.00,5550.6135,N,03732.2515,E,1,22,0.5,00188.9,M,0014.4,M,,*67\r\n";
+    memcpy(packet.gps_data, fake_gps, sizeof(packet.gps_data));
 }
 
 void read_radiation(){
-    // ...
+    packet.radiation = 123;
 }
 
 void read_bat_voltage(){
-    // ...
+    packet.bat_voltage = 3.5f;
 }
 
 void read_detector_voltage(){
-    // ...
+    packet.bat_voltage = 1.2f;
 }
 
 // initialize инициализирует устройство.
