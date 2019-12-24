@@ -2,6 +2,9 @@
 #include <stdint.h> // data types uint...
 #include <memory.h> // memcpy()
 
+#include <asf.h>
+#include <stdio_serial.h>
+
 #define PACKED __attribute__ ((__packed__))
 
 // алиас для массива uint8_t фиксированной длины;
@@ -15,6 +18,11 @@ typedef uint8_t args_buf_t[PACKET_MAX_SIZE-1];
 
 #define BOOL_FALSE 0
 #define BOOL_TRUE  1
+
+/* Structures for SPI master, slave configuration & slave instance selection */
+struct spi_module master;
+struct spi_module slave;
+struct spi_slave_inst slave_inst;
 
 //--------------------------------------
 //---------- Пакет с данными -----------
